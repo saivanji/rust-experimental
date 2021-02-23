@@ -11,6 +11,9 @@ fn main() {
         Ok(_) => println!("Crawled successfully"),
         Err(CrawlError::ArgError) => exit("Please specify argument"),
         Err(CrawlError::ParseError) => exit("Url parse error. Please specify correct url"),
+        Err(CrawlError::JoinError) => {
+            exit("Join error. TODO: do not crash program and skip failed link instead")
+        }
         Err(CrawlError::FetchError) => exit("Url fetch error. Please make sure the url is correct"),
     }
 }
@@ -40,12 +43,15 @@ async fn proceed() -> Result<()> {
     // Why need to use "parse" for selectors instead of passing raw strings to "select"?
     let links = Selector::parse("a").unwrap();
 
+    // TODO: unnest
     for link in page.select(&links) {
         match link.value().attr("href") {
             Some(href) => {
                 // Filtering out external url's.
                 if href.starts_with("/") {
-                    println!("{}", href)
+                    let link_url = url.join(&href).or(Err(CrawlError::JoinError))?;
+
+                    println!("{}", link_url)
                 }
             }
             None => println!("No href"),
