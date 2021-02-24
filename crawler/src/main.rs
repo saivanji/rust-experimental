@@ -1,62 +1,40 @@
 mod error;
+mod input;
+mod page;
 
 use async_std::task;
-use error::{CrawlError, Result};
-use scraper::{Html, Selector};
-use std::{env, process};
-use url::Url;
+use error::{CrawlError, DirectoryErrorReason, Result, WebsiteErrorReason};
+use std::path::Path;
+use std::process;
+use CrawlError::{DirectoryError, FetchError, JoinError, WebsiteError};
 
 fn main() {
-    match task::block_on(proceed()) {
+    match task::block_on(start()) {
         Ok(_) => println!("Crawled successfully"),
-        Err(CrawlError::ArgError) => exit("Please specify argument"),
-        Err(CrawlError::ParseError) => exit("Url parse error. Please specify correct url"),
-        Err(CrawlError::JoinError) => {
+        Err(WebsiteError(WebsiteErrorReason::NotProvided)) => {
+            exit("Please specify website url to crawl")
+        }
+        Err(WebsiteError(WebsiteErrorReason::ParseFailure)) => {
+            exit("Url parse error. Please specify correct url")
+        }
+        Err(WebsiteError(WebsiteErrorReason::InvalidScheme)) => exit("Invalid scheme"),
+        Err(DirectoryError(DirectoryErrorReason::NotProvided)) => exit("Please specify directory"),
+        Err(JoinError) => {
             exit("Join error. TODO: do not crash program and skip failed link instead")
         }
-        Err(CrawlError::FetchError) => exit("Url fetch error. Please make sure the url is correct"),
+        Err(FetchError) => exit("Url fetch error. Please make sure the url is correct"),
     }
 }
 
-fn obtain_url() -> Result<Url> {
-    match env::args().collect::<Vec<String>>().get(1) {
-        Some(website_url) => Url::parse(website_url).or(Err(CrawlError::ParseError)),
-        None => Err(CrawlError::ArgError),
-    }
+fn create_dirs(path: &Path) {
+    println!("{:?}", path);
 }
 
-async fn fetch_page(url: &Url) -> Result<Html> {
-    let html_text = surf::get(url)
-        .await
-        .or(Err(CrawlError::FetchError))?
-        .body_string()
-        .await
-        .or(Err(CrawlError::FetchError))?;
+async fn start() -> Result<()> {
+    let (website, path) = input::obtain()?;
 
-    Ok(Html::parse_document(&html_text))
-}
-
-async fn proceed() -> Result<()> {
-    let url = obtain_url()?;
-    let page = fetch_page(&url).await?;
-
-    // Why need to use "parse" for selectors instead of passing raw strings to "select"?
-    let links = Selector::parse("a").unwrap();
-
-    // TODO: unnest
-    for link in page.select(&links) {
-        match link.value().attr("href") {
-            Some(href) => {
-                // Filtering out external url's.
-                if href.starts_with("/") {
-                    let link_url = url.join(&href).or(Err(CrawlError::JoinError))?;
-
-                    println!("{}", link_url)
-                }
-            }
-            None => println!("No href"),
-        }
-    }
+    create_dirs(path);
+    page::process_page(&website).await?;
 
     Ok(())
 }
