@@ -1,9 +1,13 @@
+#![feature(str_split_once)]
+
 mod input;
 mod page;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_std::task;
+use std::collections::BTreeSet;
 use std::env;
+use std::fs;
 use std::path::Path;
 use std::process;
 
@@ -17,18 +21,25 @@ fn main() {
     }
 }
 
-fn create_dirs(path: &Path) {
-    println!("{:?}", path);
+fn cleanup(path: &Path) -> Result<()> {
+    if path.exists() {
+        fs::remove_dir_all(path).or(Err(anyhow!("Can not remove website directory")))?;
+    }
+
+    Ok(())
 }
 
 async fn start() -> Result<()> {
+    let mut trail: BTreeSet<&str> = BTreeSet::new();
+
     let args: Vec<String> = env::args().collect();
 
     let website = input::match_website(&args)?;
     let path = input::match_path(&args)?;
+    let context = Path::new("./out").join(path);
 
-    create_dirs(path);
-    page::process_page(&website).await?;
+    cleanup(&context)?;
+    page::process_page(&website, &context, &mut trail).await?;
 
     Ok(())
 }
