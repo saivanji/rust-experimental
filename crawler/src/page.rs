@@ -3,32 +3,25 @@ use scraper::{ElementRef, Html, Selector};
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use url::Url;
 
 const FETCH_ERROR: &str = "Url fetch error. Please make sure the url is correct";
 
-pub async fn process_page(url: &Url, context: &Path, trail: &mut BTreeSet<&str>) -> Result<()> {
-    let url_path = url.path();
+pub async fn process_page(url: &Url, workdir: &Path, trail: &mut BTreeSet<String>) -> Result<()> {
+    let url_path = url.path().to_string();
 
     if trail.contains(&url_path) {
         return Ok(());
     }
 
-    let (path, filename) = split_path(&url_path);
-
-    let dest = make_destination(path, context);
-
-    let page_text = fetch_page(url).await?;
-    let page = parse_page(&page_text);
-
-    mkdir_if_absent(&dest)?;
-    persist_page(&page_text, &dest, &filename)?;
-
-    trail.insert(&url_path);
-
-    // Why need to use "parse" for selectors instead of passing raw strings to "select"?
+    let text = fetch_page(url).await?;
+    let page = Html::parse_document(&text);
     let links = Selector::parse("a").unwrap();
+
+    persist_page(&text, &url_path, &workdir)?;
+
+    trail.insert(url_path);
 
     for link in page.select(&links) {
         process_link(&url, &link);
@@ -60,10 +53,6 @@ async fn fetch_page(url: &Url) -> Result<String> {
         .or(Err(anyhow!(FETCH_ERROR)))
 }
 
-fn parse_page(text: &str) -> Html {
-    Html::parse_document(text)
-}
-
 fn crop_slash(input: &str) -> &str {
     match input.chars().nth(0) {
         Some('/') => &input[1..],
@@ -74,33 +63,32 @@ fn crop_slash(input: &str) -> &str {
 fn split_path(path: &str) -> (&str, &str) {
     let default_filename = "index.html";
 
-    match path.rsplit_once("/") {
+    let (scope, filename) = match path.rsplit_once("/") {
         Some((path, filename)) if filename.ends_with(".html") => (path, filename),
         _ => (path, default_filename),
+    };
+
+    (scope, crop_slash(filename))
+}
+
+fn persist_page(text: &str, url_path: &str, workdir: &Path) -> Result<()> {
+    let (scope, filename) = split_path(url_path);
+    let dir_path = workdir.join(scope);
+    let file_path = dir_path.join(filename);
+
+    let file_display = file_path.display();
+    let file_create_err = Err(anyhow!("Can not create file {}", file_display));
+    let file_write_err = Err(anyhow!("Can not write to {} file", file_display));
+    let dir_create_err = Err(anyhow!("Can not create {} directory", dir_path.display()));
+
+    if !dir_path.exists() {
+        fs::create_dir_all(&dir_path).or(dir_create_err)?;
     }
-}
 
-fn make_destination(path: &str, context: &Path) -> PathBuf {
-    let path = crop_slash(path);
-
-    context.join(path)
-}
-
-fn mkdir_if_absent(dest: &PathBuf) -> Result<()> {
-    if !dest.exists() {
-        fs::create_dir_all(dest).or(Err(anyhow!("Can not create {} directory", dest.display())))?;
-    }
-
-    Ok(())
-}
-
-fn persist_page(text: &str, dest: &PathBuf, filename: &str) -> Result<()> {
-    let path = dest.join(filename);
-    let mut file =
-        fs::File::create(&path).or(Err(anyhow!("Can not create file {}", path.display())))?;
-
-    file.write(text.as_bytes())
-        .or(Err(anyhow!("Can not write to {} file", path.display())))?;
+    fs::File::create(&file_path)
+        .or(file_create_err)?
+        .write(text.as_bytes())
+        .or(file_write_err)?;
 
     Ok(())
 }

@@ -30,16 +30,16 @@ fn cleanup(path: &Path) -> Result<()> {
 }
 
 async fn start() -> Result<()> {
-    let mut trail: BTreeSet<&str> = BTreeSet::new();
+    let mut trail: BTreeSet<String> = BTreeSet::new();
 
     let args: Vec<String> = env::args().collect();
 
     let website = input::match_website(&args)?;
     let path = input::match_path(&args)?;
-    let context = Path::new("./out").join(path);
+    let workdir = Path::new("./out").join(path);
 
-    cleanup(&context)?;
-    page::process_page(&website, &context, &mut trail).await?;
+    cleanup(&workdir)?;
+    page::process_page(&website, &workdir, &mut trail).await?;
 
     Ok(())
 }
