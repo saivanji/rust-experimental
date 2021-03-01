@@ -1,7 +1,8 @@
 #![feature(str_split_once)]
 
-mod input;
-mod page;
+mod file;
+mod link;
+mod markup;
 
 use anyhow::{anyhow, Result};
 use async_std::task;
@@ -10,6 +11,8 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::process;
+
+pub use file::File;
 
 fn main() {
     match task::block_on(start()) {
@@ -34,12 +37,26 @@ async fn start() -> Result<()> {
 
     let args: Vec<String> = env::args().collect();
 
-    let website = input::match_website(&args)?;
-    let path = input::match_path(&args)?;
+    let website = match_website(&args)?;
+    let path = match_path(&args)?;
     let workdir = Path::new("./out").join(path);
 
     cleanup(&workdir)?;
     page::process_page(&website, &workdir, &mut trail).await?;
 
     Ok(())
+}
+
+pub fn match_website(args: &Vec<String>) -> Result<&str> {
+    match args.get(1) {
+        Some(url) => Ok(url),
+        None => Err(anyhow!("Please specify website url to crawl")),
+    }
+}
+
+pub fn match_path(args: &Vec<String>) -> Result<&str> {
+    match args.get(2) {
+        Some(dir) => Ok(dir),
+        None => Err(anyhow!("Please specify directory")),
+    }
 }
