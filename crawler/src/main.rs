@@ -2,17 +2,21 @@
 
 mod file;
 mod link;
+mod location;
 mod markup;
+mod node;
 
 use anyhow::{anyhow, Result};
 use async_std::task;
 use std::collections::BTreeSet;
 use std::env;
 use std::fs;
-use std::path::Path;
 use std::process;
 
-pub use file::File;
+use file::File;
+use location::Location;
+use markup::Markup;
+use node::{Node, NodeKind};
 
 fn main() {
     match task::block_on(start()) {
@@ -24,9 +28,9 @@ fn main() {
     }
 }
 
-fn cleanup(path: &Path) -> Result<()> {
-    if path.exists() {
-        fs::remove_dir_all(path).or(Err(anyhow!("Can not remove website directory")))?;
+fn cleanup(workdir: &Location) -> Result<()> {
+    if workdir.path.exists() {
+        fs::remove_dir_all(workdir.path).or(Err(anyhow!("Can not remove website directory")))?;
     }
 
     Ok(())
@@ -39,10 +43,10 @@ async fn start() -> Result<()> {
 
     let website = match_website(&args)?;
     let path = match_path(&args)?;
-    let workdir = Path::new("./out").join(path);
+    let workdir = Location::new(path);
 
     cleanup(&workdir)?;
-    page::process_page(&website, &workdir, &mut trail).await?;
+    // page::process_page(&website, &workdir, &mut trail).await?;
 
     Ok(())
 }
