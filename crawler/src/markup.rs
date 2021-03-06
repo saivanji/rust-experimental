@@ -1,4 +1,6 @@
 use crate::{File, Node, NodeKind};
+use anyhow::Result;
+use async_std::future::Future;
 use scraper::{Html, Selector};
 
 pub struct Markup {
@@ -18,7 +20,14 @@ impl Markup {
         })
     }
 
-    pub async fn traverse(&self) -> Result<()> {
+    pub async fn traverse<F>(
+        &self,
+        should_process: impl Fn(&str) -> bool,
+        process: impl Fn(&str) -> F,
+    ) -> Result<()>
+    where
+        F: Future,
+    {
         let mut all = Vec::new();
 
         let mut anchors = self.select(NodeKind::Anchor);
@@ -29,11 +38,9 @@ impl Markup {
         all.append(&mut links);
         all.append(&mut scripts);
 
-        for link in self.html.select(all) {
-            let should_process = |url: &Url| !trail.contains(no_trailing_slash(url.path()));
-
-            match extract_url(&url, &link) {
-                Some(url) if should_process(&url) => process_page(&url, workdir, trail).await?,
+        for node in all {
+            match node.href() {
+                Some(url) if should_process(&url) => process(&url).await,
                 _ => continue,
             }
         }

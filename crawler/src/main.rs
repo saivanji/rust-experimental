@@ -1,14 +1,13 @@
-#![feature(str_split_once)]
-
 mod file;
 mod link;
 mod location;
 mod markup;
 mod node;
+mod trail;
+mod utils;
 
 use anyhow::{anyhow, Result};
 use async_std::task;
-use std::collections::BTreeSet;
 use std::env;
 use std::fs;
 use std::process;
@@ -17,6 +16,7 @@ use file::File;
 use location::Location;
 use markup::Markup;
 use node::{Node, NodeKind};
+use trail::Trail;
 
 fn main() {
     match task::block_on(start()) {
@@ -37,9 +37,8 @@ fn cleanup(workdir: &Location) -> Result<()> {
 }
 
 async fn start() -> Result<()> {
-    let mut trail: BTreeSet<String> = BTreeSet::new();
-
     let args: Vec<String> = env::args().collect();
+    let trail = Trail::new();
 
     let website = match_website(&args)?;
     let path = match_path(&args)?;
