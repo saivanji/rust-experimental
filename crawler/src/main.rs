@@ -1,3 +1,4 @@
+mod entrypoint;
 mod file;
 mod link;
 mod location;
@@ -12,7 +13,9 @@ use std::env;
 use std::fs;
 use std::process;
 
+use entrypoint::Entrypoint;
 use file::File;
+use link::Link;
 use location::Location;
 use markup::Markup;
 use node::{Node, NodeKind};
@@ -30,7 +33,7 @@ fn main() {
 
 fn cleanup(workdir: &Location) -> Result<()> {
     if workdir.path.exists() {
-        fs::remove_dir_all(workdir.path).or(Err(anyhow!("Can not remove website directory")))?;
+        fs::remove_dir_all(&workdir.path).or(Err(anyhow!("Can not remove website directory")))?;
     }
 
     Ok(())
@@ -38,14 +41,29 @@ fn cleanup(workdir: &Location) -> Result<()> {
 
 async fn start() -> Result<()> {
     let args: Vec<String> = env::args().collect();
-    let trail = Trail::new();
-
     let website = match_website(&args)?;
     let path = match_path(&args)?;
+
+    let trail = Trail::new();
     let workdir = Location::new(path);
+    let entrypoint = Entrypoint::parse(&website)?;
 
     cleanup(&workdir)?;
-    // page::process_page(&website, &workdir, &mut trail).await?;
+
+    // Should it be some sort of struct which also re-used in markup?
+    let path = "/";
+    let location = workdir.concat(path);
+
+    let bytes = entrypoint.link(path).fetch().await?;
+    let file = File::from(bytes, &location);
+
+    file.persist();
+
+    match Markup::parse(&file) {
+        Some(markup) => markup.traverse(&trail, &entrypoint).await?,
+        _ => (),
+    }
+    //
 
     Ok(())
 }
