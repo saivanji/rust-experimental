@@ -5,9 +5,9 @@ mod storage;
 mod trail;
 mod utils;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_std::task;
-use std::env;
+use clap::{App, Arg};
 use std::process;
 
 use addr::entrypoint::Entrypoint;
@@ -29,30 +29,34 @@ fn main() {
 }
 
 async fn start() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let website = match_website(&args)?;
-    let path = match_path(&args)?;
+    let matches = App::new("Web crawler")
+        .version("1.0.0")
+        .about("Recursively downloads specified website")
+        .arg(
+            Arg::with_name("website")
+                .short("w")
+                .long("website")
+                .required(true)
+                .help("Website to crawl"),
+        )
+        .arg(
+            Arg::with_name("path")
+                .short("p")
+                .long("path")
+                .required(true)
+                .help("Path for saving results to. Relative to './out' dir"),
+        )
+        .get_matches();
 
-    let trail = Trail::new();
+    let website = matches.value_of("website").unwrap();
+    let path = matches.value_of("path").unwrap();
+
+    let mut trail = Trail::new();
     let workdir = Location::new(path);
     let entrypoint = Entrypoint::parse(&website)?;
 
     storage::cleanup(&workdir)?;
-    page::process("/", &entrypoint, &workdir, &trail).await?;
+    page::process("/", &entrypoint, &workdir, &mut trail).await?;
 
     Ok(())
-}
-
-pub fn match_website(args: &Vec<String>) -> Result<&str> {
-    match args.get(1) {
-        Some(url) => Ok(url),
-        None => Err(anyhow!("Please specify website url to crawl")),
-    }
-}
-
-pub fn match_path(args: &Vec<String>) -> Result<&str> {
-    match args.get(2) {
-        Some(dir) => Ok(dir),
-        None => Err(anyhow!("Please specify directory")),
-    }
 }

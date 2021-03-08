@@ -21,6 +21,6 @@ impl Entrypoint {
     }
 
     pub fn link<'a>(&'a self, path: &'a str) -> Link {
-        Link { origin: self, path }
+        Link::new(&self, path)
     }
 }

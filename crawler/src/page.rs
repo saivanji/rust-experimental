@@ -5,7 +5,7 @@ pub async fn process(
     path: &str,
     entrypoint: &Entrypoint,
     workdir: &Location,
-    trail: &Trail,
+    trail: &mut Trail,
 ) -> Result<()> {
     let location = workdir.concat(path);
 
@@ -13,9 +13,12 @@ pub async fn process(
     let file = File::from(bytes, &location);
 
     file.persist()?;
+    trail.set(path);
 
-    Ok(match Markup::parse(&file) {
+    match Markup::parse(&file) {
         Some(markup) => markup.traverse(&trail, &entrypoint).await?,
         _ => (),
-    })
+    }
+
+    Ok(())
 }

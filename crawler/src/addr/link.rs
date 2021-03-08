@@ -7,7 +7,7 @@ pub struct Link<'a> {
 }
 
 impl<'a> Link<'a> {
-    pub fn parse(origin: &'a Entrypoint, path: &'a str) -> Self {
+    pub fn new(origin: &'a Entrypoint, path: &'a str) -> Self {
         Self {
             origin,
             path: utils::no_leading_slash(path),
