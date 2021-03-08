@@ -7,14 +7,18 @@ pub struct Location {
 
 impl Location {
     pub fn new(path: &str) -> Self {
+        let path = utils::no_leading_slash(path);
+
         Self {
-            path: Path::new("./out").join(utils::no_leading_slash(path)),
+            path: Path::new("./out").join(path),
         }
     }
 
     pub fn concat(&self, path: &str) -> Self {
+        let path = utils::no_leading_slash(path);
+
         Self {
-            path: self.path.join(utils::no_leading_slash(path)),
+            path: self.path.join(path),
         }
     }
 }

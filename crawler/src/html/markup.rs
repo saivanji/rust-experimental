@@ -49,7 +49,7 @@ impl Markup {
 
         self.html
             .select(&Selector::parse(selector).unwrap())
-            .map(|element| Node::new(&kind, element))
+            .map(|element| Node::new(kind, element))
             .collect()
     }
 }

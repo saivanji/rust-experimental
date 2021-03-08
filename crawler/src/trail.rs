@@ -13,13 +13,13 @@ impl Trail {
     }
 
     pub fn set(&mut self, key: &str) {
-        key = utils::no_trailing_slash(key);
+        let key = utils::no_trailing_slash(key);
 
         self.store.insert(key.to_string());
     }
 
     pub fn has(&self, key: &str) -> bool {
-        key = utils::no_trailing_slash(key);
+        let key = utils::no_trailing_slash(key);
 
         self.store.contains(key)
     }

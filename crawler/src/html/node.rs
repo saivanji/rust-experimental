@@ -8,12 +8,12 @@ pub enum NodeKind {
 }
 
 pub struct Node<'a> {
-    kind: &'a NodeKind,
+    kind: NodeKind,
     element: ElementRef<'a>,
 }
 
 impl<'a> Node<'a> {
-    pub fn new(kind: &'a NodeKind, element: ElementRef<'a>) -> Self {
+    pub fn new(kind: NodeKind, element: ElementRef<'a>) -> Self {
         Self { kind, element }
     }
 
