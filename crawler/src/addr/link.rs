@@ -16,7 +16,7 @@ impl<'a> Link<'a> {
 
     pub async fn fetch(&self) -> Result<Vec<u8>> {
         let url = self.url();
-        let fetch_err = Err(anyhow!("Url fetch error. Url {} is not correct", url));
+        let fetch_err = Err(anyhow!("Can not fetch {} url", url));
         let parse_err = Err(anyhow!("Failed to parse {} url", url));
 
         surf::get(url)

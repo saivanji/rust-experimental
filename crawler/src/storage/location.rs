@@ -6,11 +6,11 @@ pub struct Location {
 }
 
 impl Location {
-    pub fn new(path: &str) -> Self {
-        let path = utils::no_leading_slash(path);
+    pub fn new(input: &str) -> Self {
+        let input = utils::no_leading_slash(input);
 
         Self {
-            path: Path::new("./out").join(path),
+            path: Path::new("./out").join(input),
         }
     }
 

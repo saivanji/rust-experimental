@@ -2,6 +2,7 @@ use crate::Location;
 use anyhow::{anyhow, Result};
 use std::fs;
 use std::io::Write;
+use std::path::PathBuf;
 use std::str;
 
 pub struct File<'a> {
@@ -15,14 +16,14 @@ impl<'a> File<'a> {
     }
 
     pub fn persist(&self) -> Result<()> {
-        let path = &self.loc.path;
+        let path = self.file_path();
         let display = path.display();
 
         let file_create_err = Err(anyhow!("Can not create file {}", display));
         let file_write_err = Err(anyhow!("Can not write to {} file", display));
         let dir_create_err = Err(anyhow!("Can not create {} directory", display));
 
-        let prefix = path.parent().unwrap_or(path);
+        let prefix = path.parent().unwrap_or(&path);
         std::fs::create_dir_all(prefix).or(dir_create_err)?;
 
         fs::File::create(path)
@@ -35,5 +36,15 @@ impl<'a> File<'a> {
 
     pub fn text(&self) -> Option<&str> {
         str::from_utf8(&self.blob).ok()
+    }
+
+    fn file_path(&self) -> PathBuf {
+        let path = &self.loc.path;
+        let basename = path.file_name().and_then(|s| s.to_str());
+
+        match basename {
+            Some(text) if !text.contains(".") => path.join("index.html"),
+            _ => path.to_path_buf(),
+        }
     }
 }

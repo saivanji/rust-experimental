@@ -13,9 +13,9 @@ impl Trail {
     }
 
     pub fn set(&mut self, key: &str) {
-        let key = utils::no_trailing_slash(key);
+        let key = utils::no_trailing_slash(key).to_string();
 
-        self.store.insert(key.to_string());
+        self.store.insert(key);
     }
 
     pub fn has(&self, key: &str) -> bool {

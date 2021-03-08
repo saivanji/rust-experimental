@@ -1,16 +1,17 @@
 use crate::{Entrypoint, File, Location, Markup, Trail};
 use anyhow::Result;
+use async_recursion::async_recursion;
 
+#[async_recursion(?Send)]
 pub async fn process(
     path: &str,
     entrypoint: &Entrypoint,
     workdir: &Location,
     trail: &mut Trail,
 ) -> Result<()> {
-    let location = workdir.concat(path);
-
+    let file_loc = workdir.concat(path);
     let bytes = entrypoint.link(path).fetch().await?;
-    let file = File::from(bytes, &location);
+    let file = File::from(bytes, &file_loc);
 
     file.persist()?;
     trail.set(path);
