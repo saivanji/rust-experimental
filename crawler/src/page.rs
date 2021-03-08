@@ -16,7 +16,7 @@ pub async fn process(
     trail.set(path);
 
     match Markup::parse(&file) {
-        Some(markup) => markup.traverse(&trail, &entrypoint).await?,
+        Some(markup) => markup.traverse(entrypoint, workdir, trail).await?,
         _ => (),
     }
 

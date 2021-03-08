@@ -1,4 +1,4 @@
-use crate::{Entrypoint, File, Node, NodeKind, Trail};
+use crate::{page, Entrypoint, File, Location, Node, NodeKind, Trail};
 use anyhow::Result;
 use scraper::{Html, Selector};
 
@@ -19,7 +19,12 @@ impl Markup {
         })
     }
 
-    pub async fn traverse(&self, trail: &Trail, entrypoint: &Entrypoint) -> Result<()> {
+    pub async fn traverse(
+        &self,
+        entrypoint: &Entrypoint,
+        workdir: &Location,
+        trail: &mut Trail,
+    ) -> Result<()> {
         let mut all = Vec::new();
 
         let mut anchors = self.select(NodeKind::Anchor);
@@ -32,7 +37,9 @@ impl Markup {
 
         for node in all {
             match node.href() {
-                Some(path) if !trail.has(&path) => {}
+                Some(path) if !trail.has(&path) => {
+                    page::process(&path, entrypoint, workdir, trail).await?
+                }
                 _ => continue,
             }
         }
