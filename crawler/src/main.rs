@@ -9,6 +9,7 @@ use anyhow::Result;
 use async_std::task;
 use clap::{App, Arg};
 use std::process;
+use std::time::Instant;
 
 use addr::entrypoint::Entrypoint;
 use addr::link::Link;
@@ -19,6 +20,8 @@ use storage::location::Location;
 use trail::Trail;
 
 fn main() {
+    let start_time = Instant::now();
+
     let matches = App::new("Web crawler")
         .version("1.0.0")
         .about("Recursively downloads specified website")
@@ -40,7 +43,11 @@ fn main() {
     let dest = matches.value_of("dest").unwrap();
 
     match task::block_on(crawl(website, dest)) {
-        Ok(_) => println!("Crawled successfully"),
+        Ok(_) => {
+            let duration = start_time.elapsed().as_secs();
+
+            println!("Crawled successfully. It took {} seconds", duration);
+        }
         Err(msg) => {
             println!("{}", msg);
             process::exit(1)
