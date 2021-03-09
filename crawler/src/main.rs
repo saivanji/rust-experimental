@@ -6,7 +6,6 @@ mod trail;
 mod utils;
 
 use anyhow::Result;
-use async_std::task;
 use clap::{App, Arg};
 use std::process;
 use std::time::Instant;
@@ -42,7 +41,7 @@ fn main() {
     let website = matches.value_of("website").unwrap();
     let dest = matches.value_of("dest").unwrap();
 
-    match task::block_on(crawl(website, dest)) {
+    match crawl(website, dest) {
         Ok(_) => {
             let duration = start_time.elapsed().as_secs();
 
@@ -55,13 +54,13 @@ fn main() {
     }
 }
 
-async fn crawl(website: &str, dest: &str) -> Result<()> {
+fn crawl(website: &str, dest: &str) -> Result<()> {
     let mut trail = Trail::new();
     let workdir = Location::new(dest);
     let entrypoint = Entrypoint::parse(website)?;
 
     storage::cleanup(&workdir)?;
-    page::process("/", &entrypoint, &workdir, &mut trail).await?;
+    page::process("/", &entrypoint, &workdir, &mut trail);
 
     Ok(())
 }
