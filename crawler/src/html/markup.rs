@@ -1,5 +1,6 @@
 use crate::{page, Entrypoint, File, Location, Node, NodeKind, Trail};
 use anyhow::Result;
+use futures::future::join_all;
 use scraper::{Html, Selector};
 
 pub struct Markup {
@@ -35,15 +36,20 @@ impl Markup {
         all.append(&mut links);
         all.append(&mut scripts);
 
-        for node in all {
-            match node.href() {
-                Some(path) if !trail.has(&path) => {
-                    // task::spawn(page::process(&path, entrypoint, workdir, trail));
-                    page::process(&path, entrypoint, workdir, trail).await?
-                }
-                _ => continue,
-            }
-        }
+        let futures = all
+            .iter()
+            .map(|node| node.href())
+            .filter(|href| href.map(|path| !trail.has(&path)).unwrap_or(false));
+
+        //         for node in all {
+        //             match node.href() {
+        //                 Some(path) if !trail.has(&path) => {
+        //                     // task::spawn(page::process(&path, entrypoint, workdir, trail));
+        //                     page::process(&path, entrypoint, workdir, trail).await?
+        //                 }
+        //                 _ => continue,
+        //             }
+        //         }
 
         Ok(())
     }
