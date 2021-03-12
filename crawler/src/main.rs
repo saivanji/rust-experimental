@@ -6,6 +6,7 @@ mod trail;
 mod utils;
 
 use anyhow::Result;
+use async_std::task;
 use clap::{App, Arg};
 use std::process;
 use std::time::Instant;
@@ -60,7 +61,8 @@ fn crawl(website: &str, dest: &str) -> Result<()> {
     let entrypoint = Entrypoint::parse(website)?;
 
     storage::cleanup(&workdir)?;
-    page::process("/", &entrypoint, &workdir, &mut trail);
+
+    task::block_on(page::process("/", &entrypoint, &workdir, &mut trail))?;
 
     Ok(())
 }

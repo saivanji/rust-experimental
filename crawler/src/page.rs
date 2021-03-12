@@ -2,7 +2,7 @@ use crate::{Entrypoint, File, Location, Markup, Trail};
 use anyhow::Result;
 use async_recursion::async_recursion;
 
-// #[async_recursion(?Send)]
+#[async_recursion(?Send)]
 pub async fn process(
     path: &str,
     entrypoint: &Entrypoint,
@@ -17,8 +17,8 @@ pub async fn process(
     trail.set(path);
 
     match Markup::parse(&file) {
-        Some(markup) => markup.traverse(entrypoint, workdir, trail),
-        _ => Ok(()),
+        Some(markup) => markup.traverse(entrypoint, workdir, trail).await?,
+        _ => (),
     };
 
     Ok(())

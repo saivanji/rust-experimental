@@ -1,6 +1,5 @@
 use crate::{page, Entrypoint, File, Location, Node, NodeKind, Trail};
 use anyhow::Result;
-use async_std::task;
 use scraper::{Html, Selector};
 
 pub struct Markup {
@@ -20,7 +19,7 @@ impl Markup {
         })
     }
 
-    pub fn traverse(
+    pub async fn traverse(
         &self,
         entrypoint: &Entrypoint,
         workdir: &Location,
@@ -39,8 +38,8 @@ impl Markup {
         for node in all {
             match node.href() {
                 Some(path) if !trail.has(&path) => {
-                    task::spawn(page::process(&path, entrypoint, workdir, trail));
-                    // page::process(&path, entrypoint, workdir, trail).await?
+                    // task::spawn(page::process(&path, entrypoint, workdir, trail));
+                    page::process(&path, entrypoint, workdir, trail).await?
                 }
                 _ => continue,
             }
