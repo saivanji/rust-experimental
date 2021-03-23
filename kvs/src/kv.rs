@@ -19,10 +19,9 @@ pub struct KvStore {
 impl KvStore {
     /// Opens KvStore at a given path
     pub fn open(path: PathBuf) -> Result<Self> {
-        let reader = BufReader::new(open_log_file(&path)?);
+        let mut reader = BufReader::new(open_log_file(&path)?);
         let writer = BufWriter::new(open_log_file(&path)?);
-        // TODO: might able to pass reader reference here
-        let data = load_data(reader)?;
+        let data = load_data(&mut reader)?;
 
         Ok(Self { writer, data })
     }
@@ -74,7 +73,7 @@ fn open_log_file(path: &PathBuf) -> Result<File> {
     Ok(file)
 }
 
-fn load_data(input: BufReader<File>) -> Result<HashMap<String, String>> {
+fn load_data(input: &mut BufReader<File>) -> Result<HashMap<String, String>> {
     let mut stream = Deserializer::from_reader(input).into_iter::<Command>();
     let mut data = HashMap::new();
 
