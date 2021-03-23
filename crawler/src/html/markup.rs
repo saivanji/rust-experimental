@@ -36,27 +36,26 @@ impl Markup {
         all.append(&mut links);
         all.append(&mut scripts);
 
-//         let f = join_all(
-//             all.iter()
-//                 // .filter(|node| node.href().map(|path| trail.has(&path)).unwrap_or(false))
-//                 .map(|node| {
-//                     let path = node.href().unwrap();
+        //         let f = join_all(
+        //             all.iter()
+        //                 // .filter(|node| node.href().map(|path| trail.has(&path)).unwrap_or(false))
+        //                 .map(|node| {
+        //                     let path = node.href().unwrap();
 
-//                     page::process(&path, entrypoint, workdir, trail)
-//                 }),
-//         );
+        //                     page::process(&path, entrypoint, workdir, trail)
+        //                 }),
+        //         );
 
         let f = join_all(
-            all.iter().fold(Vec::new(), |mut acc, node| {
-                match node.href() {
+            all.iter()
+                .fold(Vec::new(), |mut acc, node| match node.href() {
                     Some(path) if trail.has(path) => {
                         acc.push(page::process(path, entrypoint, workdir, trail));
                         acc
-                    },
-                    _ => acc
-                }
-            })
-        )
+                    }
+                    _ => acc,
+                }),
+        );
 
         f.await;
 

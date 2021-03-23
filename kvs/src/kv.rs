@@ -1,51 +1,100 @@
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use serde_json::{to_writer, Deserializer};
 use std::collections::HashMap;
+use std::fs::{self, File, OpenOptions};
+use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
 /// Stores key/value pairs.
 ///
 /// The data stored is kept in memory and not persisted on the disk.
-///
-/// Example:
-///
-/// ```rust
-/// use kvs::KvStore;
-///
-/// let mut store = KvStore::new();
-///
-/// store.set("foo".to_owned(), "bar".to_owned());
-/// let value = store.get("foo".to_owned());
-///
-/// assert_eq!(value, Some("bar".to_owned()));
-/// ```
-#[derive(Default)]
 pub struct KvStore {
-    store: HashMap<String, String>,
+    writer: BufWriter<File>,
+    data: HashMap<String, String>,
 }
 
+// TODO: do not keep k/v in memory
+// TODO: add compaction
 impl KvStore {
-    /// Creates a `KvStore`.
-    pub fn new() -> KvStore {
-        let store = HashMap::new();
+    /// Opens KvStore at a given path
+    pub fn open(path: PathBuf) -> Result<Self> {
+        let reader = BufReader::new(open_log_file(&path)?);
+        let writer = BufWriter::new(open_log_file(&path)?);
+        // TODO: might able to pass reader reference here
+        let data = load_data(reader)?;
 
-        KvStore { store }
-    }
-
-    pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
-        panic!();
+        Ok(Self { writer, data })
     }
 
     /// Retrieves value from a store.
-    pub fn get(&self, key: String) -> Option<String> {
-        self.store.get(&key).cloned()
+    pub fn get(&self, key: String) -> Result<Option<String>> {
+        let x = self.data.get(&key).map(|s| String::from(s));
+
+        Ok(x)
     }
 
     /// Sets value to store for a given key.
-    pub fn set(&mut self, key: String, value: String) {
-        self.store.insert(key, value);
+    pub fn set(&mut self, key: String, value: String) -> Result<()> {
+        let cmd = Command::Set {
+            key: key.to_owned(),
+            value: value.to_owned(),
+        };
+
+        self.data.insert(key, value);
+        to_writer(&mut self.writer, &cmd)?;
+
+        Ok(())
     }
 
     /// Removes value from the store.
-    pub fn remove(&mut self, key: String) {
-        self.store.remove(&key);
+    pub fn remove(&mut self, key: String) -> Result<()> {
+        let cmd = Command::Remove {
+            key: key.to_owned(),
+        };
+
+        self.data.remove(&key);
+        to_writer(&mut self.writer, &cmd)?;
+
+        Ok(())
     }
+}
+
+fn open_log_file(path: &PathBuf) -> Result<File> {
+    fs::create_dir_all(&path)?;
+
+    let log_path = path.join("db.log");
+
+    let file = OpenOptions::new()
+        .read(true)
+        .append(true)
+        .create(true)
+        .open(log_path)?;
+
+    Ok(file)
+}
+
+fn load_data(input: BufReader<File>) -> Result<HashMap<String, String>> {
+    let mut stream = Deserializer::from_reader(input).into_iter::<Command>();
+    let mut data = HashMap::new();
+
+    while let Some(cmd) = stream.next() {
+        match cmd? {
+            Command::Set { key, value } => {
+                data.insert(key, value);
+            }
+            Command::Remove { key } => {
+                data.remove(&key);
+            }
+        }
+    }
+
+    Ok(data)
+}
+
+/// Struct representing a command.
+#[derive(Serialize, Deserialize, Debug)]
+enum Command {
+    Set { key: String, value: String },
+    Remove { key: String },
 }
