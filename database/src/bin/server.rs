@@ -1,5 +1,8 @@
 use anyhow::Result;
 use clap::{App, Arg};
+use database::{DefaultEngine, Server};
+use std::env::current_dir;
+use std::net::SocketAddr;
 
 fn main() -> Result<()> {
     let version = env!("CARGO_PKG_VERSION");
@@ -22,10 +25,11 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    let address = matches.value_of("address").unwrap();
-    let engine = matches.value_of("engine").unwrap();
+    let address = matches.value_of("address").unwrap().parse::<SocketAddr>()?;
+    // let engine = matches.value_of("engine").unwrap();
 
-    println!("address - {}, engine - {}", address, engine);
+    let engine = DefaultEngine::open(current_dir()?)?;
+    Server::new(engine).run(address)?;
 
     Ok(())
 }

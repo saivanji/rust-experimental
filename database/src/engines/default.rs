@@ -1,3 +1,4 @@
+use crate::Engine;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{to_writer, Deserializer};
@@ -9,15 +10,12 @@ use std::path::{Path, PathBuf};
 /// Stores key/value pairs.
 ///
 /// The data stored is kept in memory and not persisted on the disk.
-pub struct Store {
+pub struct DefaultEngine {
     writer: BufWriter<File>,
     data: HashMap<String, String>,
 }
 
-// TODO: do not keep k/v in memory
-// TODO: add compaction
-impl Store {
-    /// Opens Store at a given path
+impl DefaultEngine {
     pub fn open(path: PathBuf) -> Result<Self> {
         let mut reader = BufReader::new(open_log_file(&path)?);
         let writer = BufWriter::new(open_log_file(&path)?);
@@ -25,16 +23,21 @@ impl Store {
 
         Ok(Self { writer, data })
     }
+}
 
+// TODO: do not keep k/v in memory
+// TODO: add compaction
+impl Engine for DefaultEngine {
+    /// Opens DefaultEngine at a given path
     /// Retrieves value from a store.
-    pub fn get(&self, key: String) -> Result<Option<String>> {
+    fn get(&self, key: String) -> Result<Option<String>> {
         let x = self.data.get(&key).map(|s| String::from(s));
 
         Ok(x)
     }
 
     /// Sets value to store for a given key.
-    pub fn set(&mut self, key: String, value: String) -> Result<()> {
+    fn set(&mut self, key: String, value: String) -> Result<()> {
         let cmd = Command::Set {
             key: key.to_owned(),
             value: value.to_owned(),
@@ -47,7 +50,7 @@ impl Store {
     }
 
     /// Removes value from the store.
-    pub fn remove(&mut self, key: String) -> Result<()> {
+    fn remove(&mut self, key: String) -> Result<()> {
         let cmd = Command::Remove {
             key: key.to_owned(),
         };
