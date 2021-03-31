@@ -77,10 +77,10 @@ fn open_log_file(path: &Path) -> Result<File> {
 }
 
 fn load_data(input: &mut BufReader<File>) -> Result<HashMap<String, String>> {
-    let mut stream = Deserializer::from_reader(input).into_iter::<Command>();
+    let mut command = Deserializer::from_reader(input).into_iter::<Command>();
     let mut data = HashMap::new();
 
-    while let Some(cmd) = stream.next() {
+    while let Some(cmd) = command.next() {
         match cmd? {
             Command::Set { key, value } => {
                 data.insert(key, value);
