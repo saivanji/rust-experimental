@@ -29,7 +29,9 @@ fn main() -> Result<()> {
     // let engine = matches.value_of("engine").unwrap();
 
     let engine = DefaultEngine::open(current_dir()?)?;
-    Server::new(engine).run(address)?;
+    Server::new(engine).run_with_callback(address, || {
+        println!("Database server is listening at {}", address)
+    })?;
 
     Ok(())
 }

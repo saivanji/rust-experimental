@@ -15,26 +15,23 @@ impl<E: Engine> Server<E> {
     }
 
     pub fn run<A: ToSocketAddrs>(&mut self, addr: A) -> Result<()> {
+        self.run_with_callback(addr, || {})
+    }
+
+    pub fn run_with_callback<A: ToSocketAddrs, C: FnOnce() -> ()>(
+        &mut self,
+        addr: A,
+        callback: C,
+    ) -> Result<()> {
         let listener = TcpListener::bind(addr)?;
+
+        callback();
 
         for request in listener.incoming() {
             match request {
                 Ok(request) => {
-                    let tcp_reader = BufReader::new(&request);
-                    // TODO: put inside of "handle_action"
-                    let action = Deserializer::from_reader(tcp_reader)
-                        .into_iter::<Action>()
-                        .next();
-
-                    match action {
-                        Some(action) => {
-                            // TODO: if "action" has Err then it should be related to that
-                            // condition
-                            if let Err(e) = self.handle_action(action?, &request) {
-                                error!("Error on serving client: {}", e);
-                            }
-                        }
-                        None => error!("Empty request"),
+                    if let Err(e) = self.handle_request(&request) {
+                        error!("Error on serving client: {}", e);
                     }
                 }
                 Err(e) => error!("Connection failed: {}", e),
@@ -44,26 +41,34 @@ impl<E: Engine> Server<E> {
         Ok(())
     }
 
-    fn handle_action(&mut self, action: Action, request: &TcpStream) -> Result<()> {
-        let reply = match action {
-            Action::Get { key } => {
-                let format_err = |e| Err(format!("{}", e));
+    fn handle_request(&mut self, request: &TcpStream) -> Result<()> {
+        let tcp_reader = BufReader::new(request);
+        let action_reader = Deserializer::from_reader(tcp_reader).into_iter::<Action>();
 
-                Reply::Get(self.engine.get(key).or_else(format_err))
-            }
-            Action::Set { key, value } => {
-                let format_err = |e| Err(format!("{}", e));
+        for action in action_reader {
+            let action = action?;
+            let reply = match action {
+                Action::Get { key } => {
+                    let format_err = |e| Err(format!("{}", e));
 
-                Reply::Set(self.engine.set(key, value).or_else(format_err))
-            }
-            Action::Remove { key } => {
-                let format_err = |e| Err(format!("{}", e));
+                    Reply::Get(self.engine.get(key).or_else(format_err))
+                }
+                Action::Set { key, value } => {
+                    let format_err = |e| Err(format!("{}", e));
 
-                Reply::Remove(self.engine.remove(key).or_else(format_err))
-            }
-        };
+                    Reply::Set(self.engine.set(key, value).or_else(format_err))
+                }
+                Action::Remove { key } => {
+                    let format_err = |e| Err(format!("{}", e));
 
-        self.respond(request, reply)
+                    Reply::Remove(self.engine.remove(key).or_else(format_err))
+                }
+            };
+
+            self.respond(request, reply)?;
+        }
+
+        Ok(())
     }
 
     fn respond(&self, request: &TcpStream, reply: Reply) -> Result<()> {
