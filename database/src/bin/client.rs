@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{App, Arg, SubCommand};
+use database::Client;
 
 fn main() -> Result<()> {
     let version = env!("CARGO_PKG_VERSION");
@@ -40,19 +41,29 @@ fn main() -> Result<()> {
         ("get", Some(matches)) => {
             let address = matches.value_of("address").unwrap();
             let key = matches.value_of("key").unwrap();
-            println!("GET. {}, address - {}", key, address);
+            let mut client = Client::connect(address)?;
+
+            match client.get(String::from(key))? {
+                Some(value) => println!("{}", value),
+                None => println!("No data found for {} key", key),
+            }
         }
         ("set", Some(matches)) => {
             let address = matches.value_of("address").unwrap();
             let key = matches.value_of("key").unwrap();
-            println!("SET. {}, address - {}", key, address);
+            let value = matches.value_of("value").unwrap();
+            let mut client = Client::connect(address)?;
+
+            client.set(String::from(key), String::from(value))?;
         }
         ("rm", Some(matches)) => {
             let address = matches.value_of("address").unwrap();
             let key = matches.value_of("key").unwrap();
-            println!("RM. {}, address - {}", key, address);
+            let mut client = Client::connect(address)?;
+
+            client.remove(String::from(key))?;
         }
-        _ => unreachable!(),
+        _ => println!("Specify an action you want to apply. Use --help for further details"),
     }
 
     Ok(())
