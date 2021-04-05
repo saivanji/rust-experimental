@@ -1,5 +1,5 @@
 use anyhow::Result;
-use database::DefaultEngine;
+use database::{DefaultEngine, Engine};
 use tempfile::TempDir;
 
 // Should get previously stored value

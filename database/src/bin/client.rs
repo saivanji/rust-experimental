@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{App, Arg, SubCommand};
 use database::Client;
+use std::process;
 
 fn main() -> Result<()> {
     let version = env!("CARGO_PKG_VERSION");
@@ -63,7 +64,7 @@ fn main() -> Result<()> {
 
             client.remove(String::from(key))?;
         }
-        _ => println!("Specify an action you want to apply. Use --help for further details"),
+        _ => process::exit(1),
     }
 
     Ok(())

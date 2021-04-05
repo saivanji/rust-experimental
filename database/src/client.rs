@@ -3,23 +3,26 @@ use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use serde_json::de::IoRead;
 use serde_json::{to_writer, Deserializer};
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 
 const INVALID_RESPONSE: &str = "Invalid server response";
 
 pub struct Client {
-    reader: Deserializer<IoRead<BufReader<TcpStream>>>,
+    deserializer: Deserializer<IoRead<BufReader<TcpStream>>>,
+    reader: TcpStream,
     writer: BufWriter<TcpStream>,
 }
 
 impl Client {
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<Self> {
         let reader = TcpStream::connect(addr)?;
+        let r = reader.try_clone()?;
         let writer = reader.try_clone()?;
 
         Ok(Client {
-            reader: Deserializer::from_reader(BufReader::new(reader)),
+            deserializer: Deserializer::from_reader(BufReader::new(reader)),
+            reader: r,
             writer: BufWriter::new(writer),
         })
     }
@@ -27,10 +30,18 @@ impl Client {
     pub fn get(&mut self, key: String) -> Result<Option<String>> {
         self.send_action(Action::Get { key })?;
 
-        match self.read_reply()? {
-            Reply::Get(reply) => reply.or_else(|err| Err(anyhow!(err))),
-            _ => Err(anyhow!(INVALID_RESPONSE)),
-        }
+        let mut resp = [0; 128];
+
+        self.reader.read(&mut resp)?;
+
+        println!("{:?}", resp);
+
+        Ok(Some(String::from("test")))
+
+        // match self.read_reply()? {
+        //     Reply::Get(reply) => reply.or_else(|err| Err(anyhow!(err))),
+        //     _ => Err(anyhow!(INVALID_RESPONSE)),
+        // }
     }
 
     pub fn set(&mut self, key: String, value: String) -> Result<()> {
@@ -59,7 +70,7 @@ impl Client {
     }
 
     fn read_reply(&mut self) -> Result<Reply> {
-        let reply = Reply::deserialize(&mut self.reader)?;
+        let reply = Reply::deserialize(&mut self.deserializer)?;
 
         Ok(reply)
     }
