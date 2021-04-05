@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{to_writer, Deserializer};
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 /// Stores key/value pairs.
@@ -45,6 +45,7 @@ impl Engine for DefaultEngine {
 
         self.data.insert(key, value);
         to_writer(&mut self.writer, &cmd)?;
+        self.writer.flush()?;
 
         Ok(())
     }
@@ -57,6 +58,7 @@ impl Engine for DefaultEngine {
 
         self.data.remove(&key);
         to_writer(&mut self.writer, &cmd)?;
+        self.writer.flush()?;
 
         Ok(())
     }
