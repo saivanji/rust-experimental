@@ -1,0 +1,12 @@
+[package]
+name = "manager"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+# common = { path = "../../libs/common" }
+store = { path = "../../libs/store" }
+anyhow = "1.0"
+bcrypt = "0.8"
+clap = "2.33.3"
+tokio = { version = "0.2", features = ["full"] }

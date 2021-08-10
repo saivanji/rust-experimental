@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "apps/api",
+    "apps/manager",
+    "apps/parser",
+    "libs/common",
+    "libs/sources",
+    "libs/store",
+]

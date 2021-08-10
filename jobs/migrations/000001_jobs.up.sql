@@ -1,0 +1,8 @@
+CREATE TABLE jobs (
+    id SERIAL PRIMARY KEY NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    url TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    tags TEXT NOT NULL
+);

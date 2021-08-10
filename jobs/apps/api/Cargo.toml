@@ -1,0 +1,15 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+common = { path = "../../libs/common" }
+store = { path = "../../libs/store" }
+actix-cors = "0.5.4"
+actix-web = "3.3.2"
+actix-session = "0.4.1"
+anyhow = "1.0"
+bcrypt = "0.8"
+derive_more = { version = "0.99.14", features = ["display"] }
+serde = { version = "1.0", features = ["derive"] }

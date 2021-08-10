@@ -1,0 +1,34 @@
+[config]
+default_to_workspace = false
+
+[tasks.create_migration]
+command = "migrate"
+args = ["create", "-ext", "sql", "-dir", "migrations", "-seq", "${@}"]
+
+[tasks.migrate_force]
+command = "migrate"
+args = ["-database", "${DATABASE_URL}", "-path", "migrations", "force", "${@}"]
+
+[tasks.migrate_up]
+command = "migrate"
+args = ["-database", "${DATABASE_URL}", "-path", "migrations", "up"]
+
+[tasks.migrate_down]
+command = "migrate"
+args = ["-database", "${DATABASE_URL}", "-path", "migrations", "down", "${@}"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.parse]
+command = "cargo"
+args = ["run", "--bin", "parser"]
+
+[tasks.create_user]
+command = "cargo"
+args = ["run", "--bin", "manager", "create_user", "${@}"]
+
+[tasks.api]
+command = "cargo"
+args = ["run",  "--bin", "api"]

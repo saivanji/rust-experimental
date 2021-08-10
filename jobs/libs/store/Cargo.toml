@@ -1,0 +1,16 @@
+[package]
+name = "store"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+common = { path = "../common" }
+sources = { path = "../sources" }
+anyhow = "1.0"
+bb8 = "0.5.0"
+bb8-postgres = "0.5.0"
+derive_more = { version = "0.99.14", features = ["display"] }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "0.2", features = ["full"] }
+tokio-postgres = "0.5"
+url = "2.2.1"

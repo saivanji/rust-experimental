@@ -1,0 +1,4 @@
+BEGIN;
+ALTER TABLE jobs DROP COLUMN source;
+DROP TYPE source;
+COMMIT;

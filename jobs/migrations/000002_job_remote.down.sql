@@ -1,0 +1,4 @@
+BEGIN;
+ALTER TABLE jobs DROP COLUMN remote;
+DROP TYPE remote;
+COMMIT;
